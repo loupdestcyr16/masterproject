@@ -1,0 +1,151 @@
+Index: gradle/wrapper/gradle-wrapper.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>#Thu Mar 05 10:08:38 CET 2026\r\ndistributionBase=GRADLE_USER_HOME\r\ndistributionPath=wrapper/dists\r\ndistributionSha256Sum=72f44c9f8ebcb1af43838f45ee5c4aa9c5444898b3468ab3f4af7b6076c5bc3f\r\ndistributionUrl=https\\://services.gradle.org/distributions/gradle-9.2.1-bin.zip\r\nnetworkTimeout=10000\r\nvalidateDistributionUrl=true\r\nzipStoreBase=GRADLE_USER_HOME\r\nzipStorePath=wrapper/dists\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>ISO-8859-1
+===================================================================
+diff --git a/gradle/wrapper/gradle-wrapper.properties b/gradle/wrapper/gradle-wrapper.properties
+--- a/gradle/wrapper/gradle-wrapper.properties	(revision b27479a2a478d7449759d99682bacae970fbc28b)
++++ b/gradle/wrapper/gradle-wrapper.properties	(date 1773308108731)
+@@ -1,9 +1,7 @@
+-#Thu Mar 05 10:08:38 CET 2026
+ distributionBase=GRADLE_USER_HOME
+ distributionPath=wrapper/dists
+-distributionSha256Sum=72f44c9f8ebcb1af43838f45ee5c4aa9c5444898b3468ab3f4af7b6076c5bc3f
+-distributionUrl=https\://services.gradle.org/distributions/gradle-9.2.1-bin.zip
++distributionUrl=https\://services.gradle.org/distributions/gradle-8.9-bin.zip
+ networkTimeout=10000
+ validateDistributionUrl=true
+ zipStoreBase=GRADLE_USER_HOME
+-zipStorePath=wrapper/dists
++zipStorePath=wrapper/dists
+\ No newline at end of file
+Index: app/build.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>plugins {\r\n    id(\"com.android.application\")\r\n    id(\"org.jetbrains.kotlin.android\")\r\n}\r\n\r\nandroid {\r\n    namespace = \"com.smartenergy.app\"\r\n    compileSdk = 34\r\n\r\n    defaultConfig {\r\n        applicationId = \"com.smartenergy.app\"\r\n        minSdk = 26\r\n        targetSdk = 34\r\n        versionCode = 1\r\n        versionName = \"1.0\"\r\n\r\n        testInstrumentationRunner = \"androidx.test.runner.AndroidJUnitRunner\"\r\n        vectorDrawables {\r\n            useSupportLibrary = true\r\n        }\r\n    }\r\n\r\n    buildTypes {\r\n        release {\r\n            isMinifyEnabled = false\r\n            proguardFiles(\r\n                getDefaultProguardFile(\"proguard-android-optimize.txt\"),\r\n                \"proguard-rules.pro\"\r\n            )\r\n        }\r\n    }\r\n    compileOptions {\r\n        sourceCompatibility = JavaVersion.VERSION_1_8\r\n        targetCompatibility = JavaVersion.VERSION_1_8\r\n    }\r\n    kotlinOptions {\r\n        jvmTarget = \"1.8\"\r\n    }\r\n    buildFeatures {\r\n        compose = true\r\n    }\r\n    composeOptions {\r\n        kotlinCompilerExtensionVersion = \"1.5.3\"\r\n    }\r\n    packaging {\r\n        resources {\r\n            excludes += \"/META-INF/{AL2.0,LGPL2.1}\"\r\n        }\r\n    }\r\n}\r\n\r\ndependencies {\r\n    // Core Android\r\n    implementation(\"androidx.core:core-ktx:1.12.0\")\r\n    implementation(\"androidx.lifecycle:lifecycle-runtime-ktx:2.6.2\")\r\n    implementation(\"androidx.activity:activity-compose:1.8.1\")\r\n\r\n    // Compose\r\n    implementation(platform(\"androidx.compose:compose-bom:2023.10.00\"))\r\n    implementation(\"androidx.compose.ui:ui\")\r\n    implementation(\"androidx.compose.ui:ui-graphics\")\r\n    implementation(\"androidx.compose.ui:ui-tooling-preview\")\r\n    implementation(\"androidx.compose.material3:material3:1.1.2\")\r\n    implementation(\"androidx.compose.material:material-icons-extended:1.5.4\")\r\n\r\n    // Jetpack\r\n    implementation(\"androidx.navigation:navigation-compose:2.7.5\")\r\n    implementation(\"androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2\")\r\n\r\n    // Coroutines\r\n    implementation(\"org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3\")\r\n    implementation(\"org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3\")\r\n\r\n    // Testing\r\n    testImplementation(\"junit:junit:4.13.2\")\r\n    androidTestImplementation(\"androidx.test.ext:junit:1.1.5\")\r\n    androidTestImplementation(\"androidx.test.espresso:espresso-core:3.5.1\")\r\n    androidTestImplementation(platform(\"androidx.compose:compose-bom:2023.10.00\"))\r\n    androidTestImplementation(\"androidx.compose.ui:ui-test-junit4\")\r\n\r\n    // Debug\r\n    debugImplementation(\"androidx.compose.ui:ui-tooling\")\r\n    debugImplementation(\"androidx.compose.ui:ui-test-manifest\")\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+--- a/app/build.gradle.kts	(revision b27479a2a478d7449759d99682bacae970fbc28b)
++++ b/app/build.gradle.kts	(date 1773304685807)
+@@ -4,11 +4,11 @@
+ }
+ 
+ android {
+-    namespace = "com.smartenergy.app"
++    namespace = "fr.isen.selim.masterproject"
+     compileSdk = 34
+ 
+     defaultConfig {
+-        applicationId = "com.smartenergy.app"
++        applicationId = "fr.isen.selim.masterproject"
+         minSdk = 26
+         targetSdk = 34
+         versionCode = 1
+@@ -50,12 +50,10 @@
+ }
+ 
+ dependencies {
+-    // Core Android
+     implementation("androidx.core:core-ktx:1.12.0")
+     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+     implementation("androidx.activity:activity-compose:1.8.1")
+ 
+-    // Compose
+     implementation(platform("androidx.compose:compose-bom:2023.10.00"))
+     implementation("androidx.compose.ui:ui")
+     implementation("androidx.compose.ui:ui-graphics")
+@@ -63,22 +61,18 @@
+     implementation("androidx.compose.material3:material3:1.1.2")
+     implementation("androidx.compose.material:material-icons-extended:1.5.4")
+ 
+-    // Jetpack
+     implementation("androidx.navigation:navigation-compose:2.7.5")
+     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+ 
+-    // Coroutines
+     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+ 
+-    // Testing
+     testImplementation("junit:junit:4.13.2")
+     androidTestImplementation("androidx.test.ext:junit:1.1.5")
+     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+     androidTestImplementation(platform("androidx.compose:compose-bom:2023.10.00"))
+     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+ 
+-    // Debug
+     debugImplementation("androidx.compose.ui:ui-tooling")
+     debugImplementation("androidx.compose.ui:ui-test-manifest")
+ }
+Index: build.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// Top-level build file where you can add configuration options common to all sub-projects/modules.\r\nplugins {\r\n    alias(libs.plugins.android.application) apply false\r\n    alias(libs.plugins.kotlin.compose) apply false\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/build.gradle.kts b/build.gradle.kts
+--- a/build.gradle.kts	(revision b27479a2a478d7449759d99682bacae970fbc28b)
++++ b/build.gradle.kts	(date 1773307481602)
+@@ -1,5 +1,5 @@
+-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+ plugins {
+-    alias(libs.plugins.android.application) apply false
+-    alias(libs.plugins.kotlin.compose) apply false
++    // Les versions ici dépendent de ce que tu as installé, 8.1.0 et 1.9.0 sont les standards pour ton setup Compose
++    id("com.android.application") version "8.1.0" apply false
++    id("org.jetbrains.kotlin.android") version "1.9.0" apply false
+ }
+\ No newline at end of file
+Index: .idea/.gitignore
+===================================================================
+diff --git a/.idea/.gitignore b/.idea/.gitignore
+deleted file mode 100644
+--- a/.idea/.gitignore	(revision b27479a2a478d7449759d99682bacae970fbc28b)
++++ /dev/null	(revision b27479a2a478d7449759d99682bacae970fbc28b)
+@@ -1,3 +0,0 @@
+-# Default ignored files
+-/shelf/
+-/workspace.xml
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><project version=\"4\">\r\n  <component name=\"ExternalStorageConfigurationManager\" enabled=\"true\" />\r\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_21\" project-jdk-name=\"jbr-21\" project-jdk-type=\"JavaSDK\">\r\n    <output url=\"file://$PROJECT_DIR$/build/classes\" />\r\n  </component>\r\n  <component name=\"ProjectType\">\r\n    <option name=\"id\" value=\"Android\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision b27479a2a478d7449759d99682bacae970fbc28b)
++++ b/.idea/misc.xml	(date 1773308907630)
+@@ -1,8 +1,7 @@
++<?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="ExternalStorageConfigurationManager" enabled="true" />
+-  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" project-jdk-name="jbr-21" project-jdk-type="JavaSDK">
+-    <output url="file://$PROJECT_DIR$/build/classes" />
+-  </component>
++  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" project-jdk-name="jbr-21" project-jdk-type="JavaSDK" />
+   <component name="ProjectType">
+     <option name="id" value="Android" />
+   </component>
+Index: .idea/vcs.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/vcs.xml b/.idea/vcs.xml
+new file mode 100644
+--- /dev/null	(date 1773305414956)
++++ b/.idea/vcs.xml	(date 1773305414956)
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="VcsDirectoryMappings">
++    <mapping directory="" vcs="Git" />
++  </component>
++</project>
+\ No newline at end of file
