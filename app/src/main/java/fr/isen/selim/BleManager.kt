@@ -170,39 +170,24 @@ class BleManager(private val context: Context) {
     }
 
     private fun processCharacteristicData(characteristic: BluetoothGattCharacteristic) {
-        val value = characteristic.value
+        val dataString = String(characteristic.value)
+        val parsedData = mutableMapOf<String, String>()
 
-        // Parser les données selon votre protocole
-        // Format exemple: "P:5,T:23.5,S:22.0,A:1,W:2500,E:15.3"
-        // P: nombre de personnes
-        // T: température actuelle
-        // S: seuil température
-        // A: AC actif (1) ou non (0)
-        // W: puissance (Watts)
-        // E: énergie journalière (kWh)
-
-        val dataString = String(value)
-        val parts = dataString.split(",")
-
-        val parsedData = parts.associate { part ->
+        dataString.split(",").forEach { part ->
             val keyValue = part.split(":")
             if (keyValue.size == 2) {
-                keyValue[0].trim() to keyValue[1].trim()
-            } else {
-                null
+                parsedData[keyValue[0].trim()] = keyValue[1].trim()
             }
-        }.filterValues { it != null }
+        }
 
-        val newData = SensorData(
-            personCount = (parsedData["P"] as? String)?.toIntOrNull() ?: _sensorData.value.personCount,
-            currentTemp = (parsedData["T"] as? String)?.toFloatOrNull() ?: _sensorData.value.currentTemp,
-            thresholdTemp = (parsedData["S"] as? String)?.toFloatOrNull() ?: _sensorData.value.thresholdTemp,
-            shouldAdjustTemp = (parsedData["A"] as? String)?.toIntOrNull() == 1,
-            currentPower = (parsedData["W"] as? String)?.toIntOrNull() ?: _sensorData.value.currentPower,
-            dailyEnergy = (parsedData["E"] as? String)?.toFloatOrNull() ?: _sensorData.value.dailyEnergy
+        _sensorData.value = SensorData(
+            personCount      = parsedData["P"]?.toIntOrNull()   ?: _sensorData.value.personCount,
+            currentTemp      = parsedData["T"]?.toFloatOrNull() ?: _sensorData.value.currentTemp,
+            thresholdTemp    = parsedData["S"]?.toFloatOrNull() ?: _sensorData.value.thresholdTemp,
+            shouldAdjustTemp = parsedData["A"]?.toIntOrNull() == 1,
+            currentPower     = parsedData["W"]?.toIntOrNull()   ?: _sensorData.value.currentPower,
+            dailyEnergy      = parsedData["E"]?.toFloatOrNull() ?: _sensorData.value.dailyEnergy
         )
-
-        _sensorData.value = newData
     }
 
     fun disconnect() {
