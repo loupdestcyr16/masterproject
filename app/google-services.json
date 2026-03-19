@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "370739324363",
+    "project_id": "smartenergy-5a32d",
+    "storage_bucket": "smartenergy-5a32d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:370739324363:android:8428680796dd02cff5c24e",
+        "android_client_info": {
+          "package_name": "fr.isen.selim.masterproject"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAX3G_6rsD32sWnPoxX3bqWOQeFQhjsTTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
