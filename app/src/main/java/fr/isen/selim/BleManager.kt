@@ -6,134 +6,81 @@ import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.*
 
-data class BleDevice(
-    val name: String,
-    val address: String,
-    val device: BluetoothDevice? = null
-)
-
-data class SensorData(
-    val personCount: Int = 0,
-    val currentTemp: Float = 0f,
-    val thresholdTemp: Float = 22f,
-    val shouldAdjustTemp: Boolean = false,
-    val currentPower: Int = 0,
-    val dailyEnergy: Float = 0f
-)
-
-data class ConnectionState(
-    val isConnected: Boolean = false,
-    val deviceName: String = ""
-)
-
 @SuppressLint("MissingPermission")
 class BleManager(private val context: Context) {
 
-    private val bluetoothManager: BluetoothManager =
-        context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+    private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
     private val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
     private val bleScanner: BluetoothLeScanner? = bluetoothAdapter?.bluetoothLeScanner
-
     private var gatt: BluetoothGatt? = null
 
-    // État de connexion
     private val _connectionState = MutableStateFlow(ConnectionState())
     val connectionState: StateFlow<ConnectionState> = _connectionState
 
-    // Données des capteurs
     private val _sensorData = MutableStateFlow(SensorData())
     val sensorData: StateFlow<SensorData> = _sensorData
 
-    // Appareils trouvés
     private val _foundDevices = MutableStateFlow<List<BleDevice>>(emptyList())
     val foundDevices: StateFlow<List<BleDevice>> = _foundDevices
 
+    // UUID du descripteur standard pour activer les notifications
+    private val CLIENT_CONFIG_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
-            result?.let { scanResult ->
-                val device = scanResult.device
-                val deviceName = device.name ?: "Unknown Device"
+            result?.device?.let { device ->
+                val deviceName = device.name ?: "Appareil Inconnu"
 
-                // Filtrer pour notre Raspberry Pi (adapter le filtre selon votre config)
-                if (deviceName.contains("SmartEnergy", ignoreCase = true) ||
-                    deviceName.contains("RaspberryPi", ignoreCase = true) ||
-                    deviceName.contains("RPi", ignoreCase = true)) {
-
-                    val bleDevice = BleDevice(
-                        name = deviceName,
-                        address = device.address,
-                        device = device
-                    )
-
-                    // Ajouter si pas déjà présent
-                    val currentList = _foundDevices.value
-                    if (!currentList.any { it.address == device.address }) {
-                        _foundDevices.value = currentList + bleDevice
-                    }
+                // On ajoute l'appareil s'il n'est pas déjà dans la liste
+                val currentList = _foundDevices.value
+                if (!currentList.any { it.address == device.address }) {
+                    // Optionnel : Tu peux remettre ton filtre ici si tu as trop d'appareils autour
+                    val bleDevice = BleDevice(name = deviceName, address = device.address, device = device)
+                    _foundDevices.value = currentList + bleDevice
                 }
             }
-        }
-
-        override fun onScanFailed(errorCode: Int) {
-            super.onScanFailed(errorCode)
-            println("Scan failed with error code: $errorCode")
         }
     }
 
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
-            when (newState) {
-                BluetoothProfile.STATE_CONNECTED -> {
-                    println("Connected to GATT server")
-                    _connectionState.value = ConnectionState(
-                        isConnected = true,
-                        deviceName = gatt?.device?.name ?: "Unknown"
-                    )
-                    gatt?.discoverServices()
-                }
-                BluetoothProfile.STATE_DISCONNECTED -> {
-                    println("Disconnected from GATT server")
-                    _connectionState.value = ConnectionState(isConnected = false)
-                }
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                _connectionState.value = ConnectionState(true, gatt?.device?.name ?: "Raspberry Pi")
+                // Indispensable pour découvrir ce que le Pi propose
+                Handler(Looper.getMainLooper()).postDelayed({ gatt?.discoverServices() }, 500)
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                _connectionState.value = ConnectionState(false)
             }
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                println("Services discovered")
-                startReadingCharacteristics(gatt)
+                setupNotifications(gatt)
             }
         }
 
-        override fun onCharacteristicRead(
-            gatt: BluetoothGatt?,
-            characteristic: BluetoothGattCharacteristic?,
-            status: Int
-        ) {
+        override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+            processCharacteristicData(characteristic)
+        }
+
+        override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                characteristic?.let { char ->
-                    processCharacteristicData(char)
-                }
-            }
-        }
-
-        override fun onCharacteristicChanged(
-            gatt: BluetoothGatt?,
-            characteristic: BluetoothGattCharacteristic?
-        ) {
-            characteristic?.let { char ->
-                processCharacteristicData(char)
+                processCharacteristicData(characteristic)
             }
         }
     }
 
     fun startScanning() {
-        _foundDevices.value = emptyList()
-        bleScanner?.startScan(scanCallback)
+        if (bluetoothAdapter?.isEnabled == true) {
+            _foundDevices.value = emptyList()
+            bleScanner?.startScan(scanCallback)
+        }
     }
 
     fun stopScanning() {
@@ -142,27 +89,21 @@ class BleManager(private val context: Context) {
 
     fun connectToDevice(device: BleDevice) {
         stopScanning()
-        if (device.device != null) {
-            gatt = device.device.connectGatt(context, false, gattCallback)
-        }
+        gatt = device.device?.connectGatt(context, false, gattCallback)
     }
 
-    private fun startReadingCharacteristics(gatt: BluetoothGatt?) {
+    private fun setupNotifications(gatt: BluetoothGatt?) {
         gatt?.services?.forEach { service ->
             service.characteristics.forEach { characteristic ->
-                // Demander les notifications ou lire les caractéristiques
-                when {
-                    (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0 -> {
-                        gatt.setCharacteristicNotification(characteristic, true)
+                // Si la caractéristique permet les notifications
+                if ((characteristic.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+                    gatt.setCharacteristicNotification(characteristic, true)
 
-                        // Configurer le descripteur pour les notifications
-                        characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"))?.let {
-                            it.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                            gatt.writeDescriptor(it)
-                        }
-                    }
-                    (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_READ) > 0 -> {
-                        gatt.readCharacteristic(characteristic)
+                    // Activation cruciale du descripteur
+                    val descriptor = characteristic.getDescriptor(CLIENT_CONFIG_UUID)
+                    if (descriptor != null) {
+                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                        gatt.writeDescriptor(descriptor)
                     }
                 }
             }
@@ -170,24 +111,28 @@ class BleManager(private val context: Context) {
     }
 
     private fun processCharacteristicData(characteristic: BluetoothGattCharacteristic) {
-        val dataString = String(characteristic.value)
-        val parsedData = mutableMapOf<String, String>()
+        val data = characteristic.value
+        if (data == null || data.isEmpty()) return
 
-        dataString.split(",").forEach { part ->
-            val keyValue = part.split(":")
-            if (keyValue.size == 2) {
-                parsedData[keyValue[0].trim()] = keyValue[1].trim()
+        val dataString = String(data)
+        // Format attendu du RPi : "P:5,T:22.5,S:20.0,A:1,W:450,E:1.2"
+        try {
+            val parsedData = dataString.split(",").associate {
+                val parts = it.split(":")
+                parts[0].trim() to parts[1].trim()
             }
-        }
 
-        _sensorData.value = SensorData(
-            personCount      = parsedData["P"]?.toIntOrNull()   ?: _sensorData.value.personCount,
-            currentTemp      = parsedData["T"]?.toFloatOrNull() ?: _sensorData.value.currentTemp,
-            thresholdTemp    = parsedData["S"]?.toFloatOrNull() ?: _sensorData.value.thresholdTemp,
-            shouldAdjustTemp = parsedData["A"]?.toIntOrNull() == 1,
-            currentPower     = parsedData["W"]?.toIntOrNull()   ?: _sensorData.value.currentPower,
-            dailyEnergy      = parsedData["E"]?.toFloatOrNull() ?: _sensorData.value.dailyEnergy
-        )
+            _sensorData.value = _sensorData.value.copy(
+                personCount = parsedData["P"]?.toIntOrNull() ?: _sensorData.value.personCount,
+                currentTemp = parsedData["T"]?.toFloatOrNull() ?: _sensorData.value.currentTemp,
+                thresholdTemp = parsedData["S"]?.toFloatOrNull() ?: _sensorData.value.thresholdTemp,
+                shouldAdjustTemp = parsedData["A"] == "1",
+                currentPower = parsedData["W"]?.toIntOrNull() ?: _sensorData.value.currentPower,
+                dailyEnergy = parsedData["E"]?.toFloatOrNull() ?: _sensorData.value.dailyEnergy
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun disconnect() {
