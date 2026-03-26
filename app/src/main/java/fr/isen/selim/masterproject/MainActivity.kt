@@ -2,13 +2,9 @@
 
 package fr.isen.selim.masterproject
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -26,81 +22,43 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var bleManager: BleManager
+    private lateinit var firebaseManager: FirebaseManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        bleManager = BleManager(this)
-        requestBluetoothPermissions()
+        firebaseManager = FirebaseManager()
+        firebaseManager.startListening()
         setContent {
             SmartEnergyTheme {
-                SmartEnergyApp(bleManager)
+                SmartEnergyApp(firebaseManager)
             }
-        }
-    }
-
-    private fun requestBluetoothPermissions() {
-        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            arrayOf(
-                Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            )
-        } else {
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-
-        val permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { perms ->
-            if (perms.values.all { it }) {
-                bleManager.startScanning()
-            }
-        }
-
-        val allPermissionsGranted = permissions.all {
-            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
-        }
-
-        if (!allPermissionsGranted) {
-            permissionLauncher.launch(permissions)
-        } else {
-            bleManager.startScanning()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        bleManager.disconnect()
+        firebaseManager.disconnect()
     }
 }
 
 @Composable
-fun SmartEnergyApp(bleManager: BleManager) {
-    val connectionState by bleManager.connectionState.collectAsState()
-    val sensorData by bleManager.sensorData.collectAsState()
-    val devices by bleManager.foundDevices.collectAsState()
-
-    LaunchedEffect(Unit) {
-        bleManager.startScanning()
-    }
+fun SmartEnergyApp(firebaseManager: FirebaseManager) {
+    val connectionState by firebaseManager.connectionState.collectAsState()
+    val sensorData      by firebaseManager.sensorData.collectAsState()
 
     when {
-        !connectionState.isConnected && devices.isEmpty() ->
-            ScanningScreen(bleManager)
-        !connectionState.isConnected && devices.isNotEmpty() ->
-            DeviceSelectionScreen(bleManager, devices)
+        !connectionState.isConnected ->
+            ConnectingScreen()
         else ->
-            DashboardScreen(bleManager, connectionState, sensorData)
+            DashboardScreen(firebaseManager, connectionState, sensorData)
     }
 }
 
 @Composable
-fun ScanningScreen(bleManager: BleManager) {
+fun ConnectingScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -121,98 +79,24 @@ fun ScanningScreen(bleManager: BleManager) {
             )
             Spacer(Modifier.height(24.dp))
             Text(
-                "Recherche des appareils...",
+                "Connexion à Firebase...",
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Medium
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "Assurez-vous que le Raspberry Pi est allumé",
+                "Assurez-vous d'être connecté à Internet",
                 color = Color(0xFFB0E0E6),
                 fontSize = 14.sp
             )
-            Spacer(Modifier.height(32.dp))
-            OutlinedButton(
-                onClick = { bleManager.startScanning() },
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF00D4FF))
-            ) {
-                Text("Relancer la recherche")
-            }
-        }
-    }
-}
-
-@Composable
-fun DeviceSelectionScreen(bleManager: BleManager, devices: List<BleDevice>) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF0F4C5C), Color(0xFF1B5E7A))
-                )
-            )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Spacer(Modifier.height(24.dp))
-            Text(
-                "Sélectionnez un appareil",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
-            )
-            devices.forEach { device ->
-                ElevatedCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = Color(0xFF1B5E7A)
-                    ),
-                    onClick = { bleManager.connectToDevice(device) }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(
-                                device.name,
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                device.address,
-                                color = Color(0xFFB0E0E6),
-                                fontSize = 12.sp
-                            )
-                        }
-                        Icon(
-                            Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = Color(0xFF00D4FF)
-                        )
-                    }
-                }
-            }
         }
     }
 }
 
 @Composable
 fun DashboardScreen(
-    bleManager: BleManager,
+    firebaseManager: FirebaseManager,
     connectionState: ConnectionState,
     sensorData: SensorData
 ) {
@@ -231,7 +115,7 @@ fun DashboardScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            HeaderSection(connectionState, bleManager)
+            HeaderSection(connectionState, firebaseManager)
             Spacer(Modifier.height(24.dp))
             PersonCountCard(sensorData.personCount)
             Spacer(Modifier.height(16.dp))
@@ -246,7 +130,7 @@ fun DashboardScreen(
 }
 
 @Composable
-fun HeaderSection(connectionState: ConnectionState, bleManager: BleManager) {
+fun HeaderSection(connectionState: ConnectionState, firebaseManager: FirebaseManager) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,19 +160,10 @@ fun HeaderSection(connectionState: ConnectionState, bleManager: BleManager) {
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    if (connectionState.isConnected) "Connecté · ${connectionState.deviceName}"
+                    if (connectionState.isConnected) "Connecté · Firebase"
                     else "Déconnecté",
                     color = Color(0xFFB0E0E6),
                     fontSize = 12.sp
-                )
-            }
-        }
-        if (connectionState.isConnected) {
-            IconButton(onClick = { bleManager.disconnect() }) {
-                Icon(
-                    Icons.Default.PowerSettingsNew,
-                    contentDescription = "Déconnecter",
-                    tint = Color(0xFFFF6B6B)
                 )
             }
         }
@@ -406,7 +281,7 @@ fun TemperatureSection(sensorData: SensorData) {
 @Composable
 fun ACControlCard(sensorData: SensorData) {
     val shouldAdjust = sensorData.shouldAdjustTemp
-    val statusColor = if (shouldAdjust) Color(0xFFFF6B6B) else Color(0xFF00D966)
+    val statusColor  = if (shouldAdjust) Color(0xFFFF6B6B) else Color(0xFF00D966)
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)),
@@ -540,10 +415,10 @@ fun EnergyMetric(label: String, value: String, percentage: Int) {
 fun SmartEnergyTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = darkColorScheme(
-            primary = Color(0xFF00D4FF),
-            secondary = Color(0xFF00D966),
+            primary    = Color(0xFF00D4FF),
+            secondary  = Color(0xFF00D966),
             background = Color(0xFF0F4C5C),
-            surface = Color(0xFF1B5E7A)
+            surface    = Color(0xFF1B5E7A)
         ),
         content = content
     )

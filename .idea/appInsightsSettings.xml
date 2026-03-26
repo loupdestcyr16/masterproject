@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="fr.isen.selim.masterproject" />
+                  <option name="mobileSdkAppId" value="1:370739324363:android:8428680796dd02cff5c24e" />
+                  <option name="projectId" value="smartenergy-5a32d" />
+                  <option name="projectNumber" value="370739324363" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
