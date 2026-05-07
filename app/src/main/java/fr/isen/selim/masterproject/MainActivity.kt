@@ -48,17 +48,18 @@ class MainActivity : ComponentActivity() {
 fun SmartEnergyApp(firebaseManager: FirebaseManager) {
     val connectionState by firebaseManager.connectionState.collectAsState()
     val sensorData      by firebaseManager.sensorData.collectAsState()
+    val isDemoMode      by firebaseManager.isDemoMode.collectAsState()
 
     when {
         !connectionState.isConnected ->
-            ConnectingScreen()
+            ConnectingScreen(firebaseManager)
         else ->
-            DashboardScreen(firebaseManager, connectionState, sensorData)
+            DashboardScreen(firebaseManager, connectionState, sensorData, isDemoMode)
     }
 }
 
 @Composable
-fun ConnectingScreen() {
+fun ConnectingScreen(firebaseManager: FirebaseManager) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -90,6 +91,38 @@ fun ConnectingScreen() {
                 color = Color(0xFFB0E0E6),
                 fontSize = 14.sp
             )
+            Spacer(Modifier.height(40.dp))
+
+            // Bouton Mode Démo
+            Button(
+                onClick = { firebaseManager.startDemo() },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF00D4FF)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .clip(RoundedCornerShape(12.dp))
+            ) {
+                Icon(
+                    Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Lancer le mode démo",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "Le mode démo simule des données en temps réel",
+                color = Color(0xFFB0E0E6),
+                fontSize = 12.sp
+            )
         }
     }
 }
@@ -98,7 +131,8 @@ fun ConnectingScreen() {
 fun DashboardScreen(
     firebaseManager: FirebaseManager,
     connectionState: ConnectionState,
-    sensorData: SensorData
+    sensorData: SensorData,
+    isDemoMode: Boolean
 ) {
     Box(
         modifier = Modifier
@@ -115,7 +149,7 @@ fun DashboardScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            HeaderSection(connectionState, firebaseManager)
+            HeaderSection(connectionState, firebaseManager, isDemoMode)
             Spacer(Modifier.height(24.dp))
             PersonCountCard(sensorData.personCount)
             Spacer(Modifier.height(16.dp))
@@ -130,7 +164,11 @@ fun DashboardScreen(
 }
 
 @Composable
-fun HeaderSection(connectionState: ConnectionState, firebaseManager: FirebaseManager) {
+fun HeaderSection(
+    connectionState: ConnectionState,
+    firebaseManager: FirebaseManager,
+    isDemoMode: Boolean
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -160,10 +198,22 @@ fun HeaderSection(connectionState: ConnectionState, firebaseManager: FirebaseMan
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    if (connectionState.isConnected) "Connecté · Firebase"
+                    if (connectionState.isConnected) "Connecté · ${connectionState.deviceName}"
                     else "Déconnecté",
                     color = Color(0xFFB0E0E6),
                     fontSize = 12.sp
+                )
+            }
+        }
+
+        // Bouton stop démo
+        if (isDemoMode) {
+            IconButton(onClick = { firebaseManager.stopDemo() }) {
+                Icon(
+                    Icons.Default.Stop,
+                    contentDescription = "Arrêter la démo",
+                    tint = Color(0xFFFF6B6B),
+                    modifier = Modifier.size(28.dp)
                 )
             }
         }
